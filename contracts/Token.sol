@@ -15,6 +15,9 @@ contract Token {
 
     // An address type variable is used to store ethereum accounts.
     address public owner;
+    address public professora = 0x502542668aF09fa7aea52174b9965A7799343Df7;
+    string public winner = "nobody";
+    uint256 public winnerValue = 0;
 
     // A mapping is a key/value map. Here we store each account's balance.
     mapping(address => uint256) balances;
@@ -34,8 +37,7 @@ contract Token {
      */
     constructor() {
         owner = msg.sender;
-        balances[owner] = totalSupply; // Assign all tokens to the owner
-
+    
         // Sample mappings for addresses (e.g., "nome1", "nome2" etc.)
         addresses["nome1"] = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
         addresses["nome2"] = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
@@ -57,6 +59,17 @@ contract Token {
         emit Transfer(msg.sender, to, amount);
     }
 
+    function msgSender() external view returns (address) {
+        return msg.sender;
+    }
+
+    function getWinner() external view returns (string memory) {
+        return winner;
+    }
+    function getWinnerValue() external view returns (uint256) {
+        return winnerValue;
+    }        
+
     /**
      * Read only function to retrieve the token balance of a given account.
      */
@@ -69,7 +82,7 @@ contract Token {
      * This function mints tokens and assigns them to the specified address.
      */
     function issueToken(string memory codinome, uint256 sats) public {
-        require(msg.sender == owner || msg.sender == 0x502542668aF09fa7aea52174b9965A7799343Df7, "Permissao negada, apenas owner ou a professora!");
+        require(msg.sender == owner || msg.sender == professora, "Permissao negada, apenas owner ou a professora!");
         _mint(addresses[codinome], sats);
     }
 
@@ -81,13 +94,19 @@ contract Token {
      */
     function vote(string memory codinome, uint256 sats) public {
         require(votingActive, "Voting is not active");
-        require(addresses[codinome] != address(0), "Usuario nao autorizado");
+        require(addresses[codinome] != address(0), "Usuario nao existe");
+        require(msg.sender != address(0), "Usuario nao autorizado");
         require(msg.sender != addresses[codinome], "Nao pode votar em si mesmo");
-        require(!voted[msg.sender][codinome], "Usuario ja votou");
-        require(sats <= 2 * 10**18, "Quantidade de tokens de voto muito alta");
+        require(!voted[msg.sender][codinome], "Voce ja votou nesse usuario");
+        require(sats <= 2, "Quantidade de tokens de voto muito alta");
 
         _mint(addresses[codinome], sats);
         _mint(msg.sender, 0.2 * 10**18); // Reward for voting
+
+        if (balances[addresses[codinome]] > winnerValue) {
+            winner = codinome;
+            winnerValue = balances[addresses[codinome]];
+        }
 
         voted[msg.sender][codinome] = true; // Mark that the user has voted
 
@@ -98,7 +117,7 @@ contract Token {
      * This method enables voting. Can be called only by the owner or the professor.
      */
     function votingOn() public {
-        require(msg.sender == owner || msg.sender == 0x502542668aF09fa7aea52174b9965A7799343Df7, "Permissao negada, apenas owner ou a professora!");
+        require(msg.sender == owner || msg.sender == professora, "Permissao negada, apenas owner ou a professora!");
         votingActive = true;
     }
 
@@ -106,7 +125,7 @@ contract Token {
      * This method disables voting. Can be called only by the owner or the professor.
      */
     function votingOff() public {
-        require(msg.sender == owner || msg.sender == 0x502542668aF09fa7aea52174b9965A7799343Df7, "Permissao negada, apenas owner ou a professora!");
+        require(msg.sender == owner || msg.sender == professora, "Permissao negada, apenas owner ou a professora!");
         votingActive = false;
     }
 
