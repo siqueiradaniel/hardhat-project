@@ -27,31 +27,17 @@ function App() {
         });
     }
 
-    const makeTransfer = async (_to, sats) => {
-        const contract = await setupContract();
-        
-        // get the from
-        contract.transfer(_to, sats).then((res) => {
-            contract.balanceOf(signerAddress).then((res) => {
-                console.log(res);
-            });
-            contract.balanceOf(_to).then((res) => {
-                console.log(res);
-            });
-        });
-    }
-
     const issueToken = async (codinome, sats) => {
         const contract = await setupContract();
         
         contract.issueToken(codinome, sats)
     }
     
-    const balanceOf = async (address) => { 
+    const balanceByCodiname = async (address) => { 
         const contract = await setupContract();
         
         // get the from
-        contract.balanceOf(address).then((res) => {
+        contract.balanceByCodiname(address).then((res) => {
             console.log(res);
         });
     }
@@ -93,11 +79,23 @@ function App() {
         });
     }
 
-    const getWinner = async () => {
-        const contract = await setupContract(); // Set up the contract
-        const res = await contract.getWinner(); // Await the result of getWinner
-        return res; // Return the result
+    let isListening = false; // Variável para garantir que o ouvinte seja configurado apenas uma vez
+
+    const listeningVote = async () => {
+        if (isListening) return; // Impede que o ouvinte seja configurado novamente
+
+        const contract = await setupContract(); // Instância do contrato
+
+        contract.on('Voted', (voter, codinome, amount) => {
+            console.log(`Voted event: voter=${voter}, codinome=${codinome}, amount=${amount}`);
+        });
+
+        isListening = true; // Marca que o ouvinte foi configurado
     };
+
+    
+    // Call the function to start listening
+    listeningVote();
     
 
     
@@ -120,7 +118,7 @@ function App() {
                         <input 
                             type="checkbox" 
                             checked={vontingOn}
-                            onClick={() => {
+                            onChange={() => {
                                 (vontingOn ? votingOff : votingOn)();
                                 setVotingOn(!vontingOn);
                             }}
@@ -153,16 +151,95 @@ function App() {
                     <button className="btn-primary" onClick={() => vote(address, value)}>Votar</button>
                 </div>
 
-                <button className="btn-secondary" onClick={() => issueToken(address, value)}>Emitir Tokens</button>
+                <div className='btn-group'>
+                    <button className="btn-secondary" onClick={() => issueToken(address, value)}>Emitir Tokens</button>
+                    <button className="btn-secondary" onClick={() => balanceByCodiname(address)}>Ver saldo</button>
+                </div>
             </div>
 
             {/* Right: Ranking Section */}
             <div className="ranking-section">
-                <h2>Winner</h2>
+                <h2>Ranking</h2>
                 <ul className="ranking-list">
                     <li>
                         <span>Joãozinho</span>
                         <span>42.3</span>
+                    </li>
+                    <li>
+                        <span>Mariazinha</span>
+                        <span>31.8</span>
+                    </li>
+                    <li>
+                        <span>Flora</span>
+                        <span>12.3</span>
+                    </li>
+                    <li>
+                        <span>Joãozinho</span>
+                        <span>42.3</span>
+                    </li>
+                    <li>
+                        <span>Mariazinha</span>
+                        <span>31.8</span>
+                    </li>
+                    <li>
+                        <span>Flora</span>
+                        <span>12.3</span>
+                    </li>
+                    <li>
+                        <span>Joãozinho</span>
+                        <span>42.3</span>
+                    </li>
+                    <li>
+                        <span>Mariazinha</span>
+                        <span>31.8</span>
+                    </li>
+                    <li>
+                        <span>Flora</span>
+                        <span>12.3</span>
+                    </li>
+                    <li>
+                        <span>Joãozinho</span>
+                        <span>42.3</span>
+                    </li>
+                    <li>
+                        <span>Mariazinha</span>
+                        <span>31.8</span>
+                    </li>
+                    <li>
+                        <span>Flora</span>
+                        <span>12.3</span>
+                    </li>
+                    <li>
+                        <span>Mariazinha</span>
+                        <span>31.8</span>
+                    </li>
+                    <li>
+                        <span>Flora</span>
+                        <span>12.3</span>
+                    </li>
+                    <li>
+                        <span>Joãozinho</span>
+                        <span>42.3</span>
+                    </li>
+                    <li>
+                        <span>Mariazinha</span>
+                        <span>31.8</span>
+                    </li>
+                    <li>
+                        <span>Flora</span>
+                        <span>12.3</span>
+                    </li>
+                    <li>
+                        <span>Joãozinho</span>
+                        <span>42.3</span>
+                    </li>
+                    <li>
+                        <span>Mariazinha</span>
+                        <span>31.8</span>
+                    </li>
+                    <li>
+                        <span>Flora</span>
+                        <span>12.3</span>
                     </li>
                 </ul>
             </div>

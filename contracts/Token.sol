@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
 // This is the main building block for smart contracts.
 contract Token {
     // Some string type variables to identify the token.
-    string public name = "My Hardhat Token";
+    string public name = "Turing";
     string public symbol = "MHT";
 
     // The fixed amount of tokens, stored in an unsigned integer type variable.
@@ -61,20 +61,17 @@ contract Token {
 
     function msgSender() external view returns (address) {
         return msg.sender;
-    }
-
-    function getWinner() external view returns (string memory) {
-        return winner;
-    }
-    function getWinnerValue() external view returns (uint256) {
-        return winnerValue;
-    }        
+    }     
 
     /**
      * Read only function to retrieve the token balance of a given account.
      */
     function balanceOf(address account) external view returns (uint256) {
         return balances[account];  
+    }
+
+    function balanceByCodiname(string memory codinome) external view returns (uint256) {
+        return balances[addresses[codinome]];
     }
 
     /**
@@ -100,13 +97,8 @@ contract Token {
         require(!voted[msg.sender][codinome], "Voce ja votou nesse usuario");
         require(sats <= 2, "Quantidade de tokens de voto muito alta");
 
-        _mint(addresses[codinome], sats);
+        _mint(addresses[codinome], sats * 10**18 );
         _mint(msg.sender, 0.2 * 10**18); // Reward for voting
-
-        if (balances[addresses[codinome]] > winnerValue) {
-            winner = codinome;
-            winnerValue = balances[addresses[codinome]];
-        }
 
         voted[msg.sender][codinome] = true; // Mark that the user has voted
 

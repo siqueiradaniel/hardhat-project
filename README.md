@@ -1,16 +1,15 @@
 # setup our Dapp
 
-## Run this command start a local blockchain and deploy our contract
-```shell
-npm run start-hardhat
-```
-
+## To start the local blockchain, deploy our contract in it and start frontend run:
 ## Run this command start the frontend
 ```shell
+npm run start-hardhat
 npm run start-frontend
+npm run deploy-contract
 ```
-## If get trobles try
-Set up NODE_OPTIONS with legacy provider
+
+
+## If get trobles Set up NODE_OPTIONS with legacy provider
 ```shell
 export NODE_OPTIONS=--openssl-legacy-provider
 ```
