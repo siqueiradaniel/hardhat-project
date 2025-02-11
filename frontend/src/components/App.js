@@ -1,6 +1,6 @@
 import './../css/App.css';
 import { ethers, Contract, ConstructorFragment } from 'ethers';
-import { React, useState, useEffect } from 'react';
+import { React, useRef, useState, useEffect } from 'react';
 import TokenArtifact from "../contracts/Token.json";
 
 const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
@@ -12,6 +12,14 @@ function App() {
     const [vontingOn, setVotingOn] = useState(true);
     const [address, setAddress] = useState("");
     const [value, setValue] = useState(0);
+    const firstRun = useRef(false);
+
+    useEffect(() => {
+        if (!firstRun.current) {
+            listeningVote();
+            firstRun.current = true;
+        }
+    }, []);
 
     const setupContract = async () => {
         const provider = new ethers.JsonRpcProvider(localBlockchainAddress);
@@ -79,23 +87,16 @@ function App() {
         });
     }
 
-    let isListening = false; // Variável para garantir que o ouvinte seja configurado apenas uma vez
-
     const listeningVote = async () => {
-        if (isListening) return; // Impede que o ouvinte seja configurado novamente
-
         const contract = await setupContract(); // Instância do contrato
-
+    
+        console.log("Get in")
+        // Add a new listener for the "Voted" event
         contract.on('Voted', (voter, codinome, amount) => {
             console.log(`Voted event: voter=${voter}, codinome=${codinome}, amount=${amount}`);
         });
-
-        isListening = true; // Marca que o ouvinte foi configurado
     };
-
     
-    // Call the function to start listening
-    listeningVote();
     
 
     
