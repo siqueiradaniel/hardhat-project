@@ -4,8 +4,8 @@
 ## Run this command start the frontend
 ```shell
 npm run start-hardhat
-npm run start-frontend
 npm run deploy-contract
+npm run start-frontend
 ```
 
 
