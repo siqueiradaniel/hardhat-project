@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-hardhat": "npm install && npx hardhat compile && npx hardhat node",
+    "deploy-contract": "npx hardhat ignition deploy ./ignition/modules/Token.js --network localhost",
+    "start-frontend": "cd frontend && npm install && npm start"
   },
   "repository": {
     "type": "git",

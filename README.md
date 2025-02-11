@@ -1,31 +1,16 @@
 # setup our Dapp
 
-Try running some of the following tasks to get started
+## Run this command start a local blockchain and deploy our contract
 ```shell
-npm install
-```
-## To start our contract
-compile the contract
-```shell
-npx hardhat compile
+npm run start-hardhat
 ```
 
-start our local node
+## Run this command start the frontend
 ```shell
-npx hardhat node
+npm run start-frontend
 ```
-
-deploy contract in the localhost blockchain
-```shell
-npx hardhat ignition deploy ./ignition/modules/Token.js --network localhost
-```
-
+## If get trobles try
 Set up NODE_OPTIONS with legacy provider
 ```shell
 export NODE_OPTIONS=--openssl-legacy-provider
-```
-
-Start React app
-```shell
-npm start
 ```
