@@ -80,7 +80,7 @@ contract Token {
         _;
     }
     modifier onlyTwoSats(uint256 sats) {
-        require(sats <= 2, "Quantidade de tokens de voto muito alta");
+        require(sats <= 2 * (10 ** 18), "Quantidade de tokens de voto muito alta");
         _;
     }
     
@@ -132,7 +132,7 @@ contract Token {
                                                                voteActivated()
                                                                oneVoteToRecipient(codinome)
                                                                onlyTwoSats(sats) {
-        _mint(addresses[codinome], sats * 10**18 );
+        _mint(addresses[codinome], sats);
         _mint(msg.sender, 0.2 * 10**18); // Reward for voting
 
         voted[msg.sender][codinome] = true; // Mark that the user has voted

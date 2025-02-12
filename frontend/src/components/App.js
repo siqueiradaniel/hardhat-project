@@ -1,6 +1,6 @@
 import './../css/App.css';
-import { ethers, Contract, ConstructorFragment } from 'ethers';
-import { React, useRef, useState, useEffect } from 'react';
+import { toBigInt, parseUnits, ethers, Contract, ConstructorFragment } from 'ethers';
+import { React, useRef, formatUnits, useState, useEffect } from 'react';
 import TokenArtifact from "../contracts/Token.json";
 
 const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
@@ -23,91 +23,82 @@ function App() {
         return new Contract(contractAddress, TokenArtifact.abi, signer);
     };
     
+    const TuringsToSats = (turings) => parseUnits(turings.toString(), 18); 
+    const SatsToTuring = (sats) => parseFloat(formatUnits(sats, 18)); // convert sats to turings with proper decimal handling
+
+
     const getSymbol = async () => {
         const contract = await setupContract();
 
-        contract.symbol().then((res) => {
+        await contract.symbol().then((res) => {
             console.log(res);
         });
     }
 
-    const issueToken = async (codinome, sats) => {
+    const issueToken = async (codinome, turings) => {
         const contract = await setupContract();
         
-        contract.issueToken(codinome, sats)
+        await contract.issueToken(codinome, TuringsToSats(turings))
     }
     
     const balanceByCodiname = async (address) => { 
         const contract = await setupContract();
         
-        // get the from
-        contract.balanceByCodiname(address).then((res) => {
-            console.log(res);
+        await contract.balanceByCodiname(address).then((res) => {
+            console.log(SatsToTuring(res));
         });
     }
 
-    const vote = async (codinome, sats) => {
+    const vote = async (codinome, Turings) => {
         const contract = await setupContract();
         
-        // get the from
-        contract.vote(codinome, sats).then((res) => {
-            contract.balanceOf(signerAddress).then((res) => {
-                console.log(res);
-            });
-        });
+        await contract.vote(codinome, TuringsToSats(Turings));
     }
 
     const votingOn = async () => {
         const contract = await setupContract();
         
-        // get the from
-        contract.votingOn().then((res) => {
-            console.log(res);
-        });
+        await contract.votingOn();
     }
 
     const votingOff = async () => {
         const contract = await setupContract();
         
-        // get the from
-        contract.votingOff().then((res) => {
-            console.log(res);
-        });
+        await contract.votingOff();
     }
 
     const msgSender = async () => {
         const contract = await setupContract();
 
-        contract.msgSender().then((res) => {
+        await contract.msgSender().then((res) => {
             console.log(res);
         });
     }
 
     
-    
-    
     const listeningVote = async () => {
         const contract = await setupContract();
-
-        contract.on('Voted', (voter, codinome, amount) => {
-            console.log(`Voted event: voter=${voter}, codinome=${codinome}, amount=${amount}`);
-
-            // Convert amount to a number (assuming it's a string)
-            amount = parseInt(amount, 10);
-
+    
+        await contract.on('Voted', (voter, codinome, sats) => {
+            console.log(`Voted event: voter=${voter}, codinome=${codinome}, sats=${sats}`);
+    
+            // Ensure sats is converted to Turings with correct precision
+            const turings = SatsToTuring(sats);  // Get the correct value in Turings
+    
             setCodinomeAmounts(prevAmounts => {
-                // If codinome already exists, add amount to the previous value
                 const newAmounts = { ...prevAmounts };
-                newAmounts[codinome] = newAmounts[codinome] ? newAmounts[codinome] + amount : amount;
+                newAmounts[codinome] = newAmounts[codinome] ? newAmounts[codinome] + turings : turings;
                 return newAmounts;
             });
         });
-
+    
         // Cleanup the listener when the component is unmounted
         return () => {
             contract.removeListener('Voted');
         };
     };
+    
+    
     
 
     //issueToken("nome3", 1000);
@@ -172,10 +163,10 @@ function App() {
         <div className="ranking-section">
             <h2>Ranking</h2>
             <ul className="ranking-list">
-                {sortedEntries.map(([codinome, amount]) => (
+                {sortedEntries.map(([codinome, turings]) => (
                     <li key={codinome}>
                         <span>{codinome}</span>
-                        <span>{amount}</span>
+                        <span>{turings.toFixed(1)}</span>
                     </li>
                 ))}
             </ul>
