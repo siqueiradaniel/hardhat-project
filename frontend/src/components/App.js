@@ -11,10 +11,12 @@ function App() {
     const [vontingOn, setVotingOn] = useState(true);
     const [address, setAddress] = useState("");
     const [value, setValue] = useState(0);
-    const [codinomeAmounts, setCodinomeAmounts] = useState({});
+    const [codinomeBalances, setCodinomeBalances] = useState({});
+    
 
     useEffect(() => {
         listeningVote();
+        getAllBalances();
     }, []);
 
     const setupContract = async () => {
@@ -24,53 +26,86 @@ function App() {
     };
     
     const TuringsToSats = (turings) => parseUnits(turings.toString(), 18); 
-    const SatsToTuring = (sats) => parseFloat(formatUnits(sats, 18)); // convert sats to turings with proper decimal handling
+    const SatsToTuring = (sats: BigNumber): number => {
+        // Assuming 1 Turing = 10^18 Sats (example scaling factor)
+        const scalingFactor = ethers.parseUnits("1", 18); 
+        return parseFloat(sats.toString()) / parseFloat(scalingFactor.toString());
+    };    
 
 
     const getSymbol = async () => {
         const contract = await setupContract();
 
-        await contract.symbol().then((res) => {
+        contract.symbol().then((res) => {
             console.log(res);
         });
     }
 
-    const issueToken = async (codinome, turings) => {
+    const getAllBalances = async () => {
         const contract = await setupContract();
+        const [codi, bal] = await contract.getAllBalances();
         
-        await contract.issueToken(codinome, TuringsToSats(turings))
+        const balance_mp = codi.reduce((acc, codinome, index) => {
+            acc[codinome] = SatsToTuring(bal[index]); // Convert to readable format
+            return acc;
+        }, {});
+    
+        setCodinomeBalances(balance_mp);
+    };
+
+    const issueToken = async (codinome: string, turings: number) => {
+    try {
+        const contract = await setupContract();
+        const sats = TuringsToSats(turings);
+
+        const tx = await contract.issueToken(codinome, sats);
+        await tx.wait();
+
+        setCodinomeBalances(prevAmounts => ({
+            ...prevAmounts,
+            [codinome]: (Number(prevAmounts[codinome]) || 0) + Number(turings),
+        }));
+
+        console.log(`Issued ${turings} TUR to ${codinome}`);
+    } catch (error) {
+        // Extract and log only the specific error message
+        const errorMessage = error.reason || (error.revert?.args?.[0] ?? "Unknown error");
+        console.error(errorMessage);
     }
+};
+
     
     const balanceByCodiname = async (address) => { 
         const contract = await setupContract();
         
-        await contract.balanceByCodiname(address).then((res) => {
+        contract.balanceByCodiname(address).then((res) => {
             console.log(SatsToTuring(res));
         });
     }
 
-    const vote = async (codinome, Turings) => {
+    const vote = async (codinome, turings) => {
         const contract = await setupContract();
         
-        await contract.vote(codinome, TuringsToSats(Turings));
+        console.log(TuringsToSats(turings));
+        contract.vote(codinome, TuringsToSats(turings));
     }
 
     const votingOn = async () => {
         const contract = await setupContract();
         
-        await contract.votingOn();
+        contract.votingOn();
     }
 
     const votingOff = async () => {
         const contract = await setupContract();
         
-        await contract.votingOff();
+        contract.votingOff();
     }
 
     const msgSender = async () => {
         const contract = await setupContract();
 
-        await contract.msgSender().then((res) => {
+        contract.msgSender().then((res) => {
             console.log(res);
         });
     }
@@ -79,13 +114,13 @@ function App() {
     const listeningVote = async () => {
         const contract = await setupContract();
     
-        await contract.on('Voted', (voter, codinome, sats) => {
+        contract.on('Voted', (voter, codinome, sats) => {
             console.log(`Voted event: voter=${voter}, codinome=${codinome}, sats=${sats}`);
     
             // Ensure sats is converted to Turings with correct precision
             const turings = SatsToTuring(sats);  // Get the correct value in Turings
-    
-            setCodinomeAmounts(prevAmounts => {
+
+            setCodinomeBalances(prevAmounts => {
                 const newAmounts = { ...prevAmounts };
                 newAmounts[codinome] = newAmounts[codinome] ? newAmounts[codinome] + turings : turings;
                 return newAmounts;
@@ -107,8 +142,9 @@ function App() {
     //votingOn()
     // msgSender()
     // vote("nome1", 1000);
-    const sortedEntries = Object.entries(codinomeAmounts).sort((a, b) => b[1] - a[1]);
 
+    const sortedEntries = () => Object.entries(codinomeBalances).sort((a, b) => b[1] - a[1]); 
+    console.log(codinomeBalances);
     return (
         <div className="dashboard-container">
         
@@ -163,10 +199,10 @@ function App() {
         <div className="ranking-section">
             <h2>Ranking</h2>
             <ul className="ranking-list">
-                {sortedEntries.map(([codinome, turings]) => (
+                {sortedEntries().map(([codinome, turings]) => (
                     <li key={codinome}>
                         <span>{codinome}</span>
-                        <span>{turings.toFixed(1)}</span>
+                        <span>{turings}</span>
                     </li>
                 ))}
             </ul>

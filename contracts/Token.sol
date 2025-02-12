@@ -25,6 +25,9 @@ contract Token {
     // Voting state
     bool public votingActive = true;
 
+    uint256 ACCOUNT_NUMBER = 11;
+    string[] codinomes = new string[](ACCOUNT_NUMBER);
+
     // The Transfer event helps off-chain applications understand
     // what happens within your contract.
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
@@ -48,6 +51,18 @@ contract Token {
         addresses["nome8"] = 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f;
         addresses["nome9"] = 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720;
         addresses["nome10"] = 0xBcd4042DE499D14e55001CcbB24a551F3b954096;
+
+        codinomes[0] = "nome0";
+        codinomes[1] = "nome1";
+        codinomes[2] = "nome2";
+        codinomes[3] = "nome3";
+        codinomes[4] = "nome4";
+        codinomes[5] = "nome5";
+        codinomes[6] = "nome6";
+        codinomes[7] = "nome7";
+        codinomes[8] = "nome8";
+        codinomes[9] = "nome9";
+        codinomes[10] = "nome10";
     }
 
     modifier isSuperUser() {
@@ -158,5 +173,16 @@ contract Token {
     function _mint(address userAddress, uint256 amount) internal unauthorizedRecipient(userAddress) {
         balances[userAddress] += amount;
         totalSupply += amount;
+    }
+
+    function getAllBalances() public view returns (string[] memory, uint256[] memory) {
+        uint256[] memory amounts = new uint256[](ACCOUNT_NUMBER);
+
+        amounts[0] = balances[addresses[codinomes[0]]];
+        amounts[1] = balances[addresses[codinomes[1]]];
+
+        
+
+        return (codinomes, amounts);
     }
 }
