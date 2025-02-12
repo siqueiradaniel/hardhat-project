@@ -55,7 +55,7 @@ function App() {
             }, {});
         
             setCodinomeBalances(balance_mp);
-
+            console.log(codinomeBalances);
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
         }
@@ -72,7 +72,6 @@ function App() {
                 [codinome]: (Number(prevAmounts[codinome]) || 0) + Number(turings),
             }));
 
-            console.log(`Issued ${turings} TUR to ${codinome}`);
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
         }
@@ -83,7 +82,7 @@ function App() {
         try {
             const contract = await setupContract();
             const balance = await contract.balanceByCodiname(address);
-            console.log(SatsToTuring(balance));
+            
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
         }
@@ -93,7 +92,6 @@ function App() {
         try {
             const contract = await setupContract();
             
-            console.log(TuringsToSats(turings));
             await contract.vote(codinome, TuringsToSats(turings));
 
         } catch (error) {
@@ -125,7 +123,6 @@ function App() {
 
         const res = await contract.msgSender()
         console.log(res);
-        
     }
 
     
@@ -150,19 +147,9 @@ function App() {
             contract.removeListener('Voted');
         };
     };
-    
-    
-    
-
-    //issueToken("nome3", 1000);
-    //balanceOf('0x90F79bf6EB2c4f870365E785982E1f101E93b906');
-    //votingOff()
-    //votingOn()
-    // msgSender()
-    // vote("nome1", 1000);
 
     const sortedEntries = () => Object.entries(codinomeBalances).sort((a, b) => b[1] - a[1]); 
-    console.log(codinomeBalances);
+    
     return (
         <div className="dashboard-container">
         
