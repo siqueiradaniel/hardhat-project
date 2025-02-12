@@ -34,80 +34,98 @@ function App() {
 
 
     const getSymbol = async () => {
-        const contract = await setupContract();
-
-        contract.symbol().then((res) => {
-            console.log(res);
-        });
+        try {
+            const contract = await setupContract();
+            await contract.symbol().then((res) => {
+                console.log(res);
+            });
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+        }
     }
 
     const getAllBalances = async () => {
-        const contract = await setupContract();
-        const [codi, bal] = await contract.getAllBalances();
+        try {
+            const contract = await setupContract();
+            const [codi, bal] = await contract.getAllBalances();
+            
+            const balance_mp = codi.reduce((acc, codinome, index) => {
+                acc[codinome] = SatsToTuring(bal[index]); // Convert to readable format
+                return acc;
+            }, {});
         
-        const balance_mp = codi.reduce((acc, codinome, index) => {
-            acc[codinome] = SatsToTuring(bal[index]); // Convert to readable format
-            return acc;
-        }, {});
-    
-        setCodinomeBalances(balance_mp);
+            setCodinomeBalances(balance_mp);
+
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+        }
     };
 
     const issueToken = async (codinome: string, turings: number) => {
-    try {
-        const contract = await setupContract();
-        const sats = TuringsToSats(turings);
+        try {
+            const contract = await setupContract();
+            const sats = TuringsToSats(turings);
+            await contract.issueToken(codinome, sats);
+           
+            setCodinomeBalances(prevAmounts => ({
+                ...prevAmounts,
+                [codinome]: (Number(prevAmounts[codinome]) || 0) + Number(turings),
+            }));
 
-        const tx = await contract.issueToken(codinome, sats);
-        await tx.wait();
-
-        setCodinomeBalances(prevAmounts => ({
-            ...prevAmounts,
-            [codinome]: (Number(prevAmounts[codinome]) || 0) + Number(turings),
-        }));
-
-        console.log(`Issued ${turings} TUR to ${codinome}`);
-    } catch (error) {
-        // Extract and log only the specific error message
-        const errorMessage = error.reason || (error.revert?.args?.[0] ?? "Unknown error");
-        console.error(errorMessage);
-    }
-};
+            console.log(`Issued ${turings} TUR to ${codinome}`);
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+        }
+    };
 
     
     const balanceByCodiname = async (address) => { 
-        const contract = await setupContract();
-        
-        contract.balanceByCodiname(address).then((res) => {
-            console.log(SatsToTuring(res));
-        });
+        try {
+            const contract = await setupContract();
+            const balance = await contract.balanceByCodiname(address);
+            console.log(SatsToTuring(balance));
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+        }
     }
 
     const vote = async (codinome, turings) => {
-        const contract = await setupContract();
-        
-        console.log(TuringsToSats(turings));
-        contract.vote(codinome, TuringsToSats(turings));
+        try {
+            const contract = await setupContract();
+            
+            console.log(TuringsToSats(turings));
+            await contract.vote(codinome, TuringsToSats(turings));
+
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+        }
     }
 
     const votingOn = async () => {
-        const contract = await setupContract();
-        
-        contract.votingOn();
+        try {
+            const contract = await setupContract();
+            await contract.votingOn();
+
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+        }
     }
 
     const votingOff = async () => {
-        const contract = await setupContract();
-        
-        contract.votingOff();
+        try {
+            const contract = await setupContract();
+            await contract.votingOff();
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+        }
     }
 
     const msgSender = async () => {
         const contract = await setupContract();
 
-        contract.msgSender().then((res) => {
-            console.log(res);
-        });
+        const res = await contract.msgSender()
+        console.log(res);
+        
     }
 
     
