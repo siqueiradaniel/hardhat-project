@@ -12,10 +12,9 @@ function App() {
     const [value, setValue] = useState(0);
     const [codinomeBalances, setCodinomeBalances] = useState({});
     
-
     useEffect(() => {
-        listeningVote();
         getAllBalances();
+        listeningVote();
     }, []);
 
     const setupContract = async () => {
@@ -104,24 +103,36 @@ function App() {
     }
 
     const listeningVote = async () => {
-        const contract = await setupContract();
-    
-        contract.on('Voted', (voter, codinome, sats) => {
-            console.log(`Voted event: voter=${voter}, codinome=${codinome}, sats=${sats}`);
-            const turings = SatsToTuring(sats); 
+        try {
+            const contract = await setupContract();
 
-            setCodinomeBalances(prevAmounts => {
-                const newAmounts = { ...prevAmounts };
-                newAmounts[codinome] = newAmounts[codinome] ? newAmounts[codinome] + turings : turings;
-                return newAmounts;
+            contract.on('Voted', async (sender, recipient, sats) => {
+                console.log(`Voted event: sender=${sender}, recipient=${recipient}, sats=${sats}`);
+                const turings = SatsToTuring(sats); // Convert sats to turings
+                const reward_in_sats = await contract.VOTE_REWARD(); 
+                const reward_in_turing = SatsToTuring(reward_in_sats);
+
+                // Get balances for sender and the provided address
+                await contract.balanceByCodiname(sender);
+                await contract.balanceByCodiname(recipient);
+                
+                setCodinomeBalances(prevAmounts => ({
+                    ...prevAmounts,
+                    [sender]: (prevAmounts[sender] || 0) + reward_in_turing,
+                    [recipient]: (prevAmounts[recipient] || 0) + turings
+                }));
             });
-        });
+
+            // Cleanup the listener when the component is unmounted
+            return () => {
+                contract.removeListener('Voted');
+            };
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+        }
     
-        // Cleanup the listener when the component is unmounted
-        return () => {
-            contract.removeListener('Voted');
-        };
     };
+
 
     const sortedEntries = () => Object.entries(codinomeBalances).sort((a, b) => b[1] - a[1]); 
     
@@ -182,7 +193,7 @@ function App() {
                 {sortedEntries().map(([codinome, turings]) => (
                     <li key={codinome}>
                         <span>{codinome}</span>
-                        <span>{turings}</span>
+                        <span>{turings.toFixed(3)}</span>
                     </li>
                 ))}
             </ul>
