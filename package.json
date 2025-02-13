@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start-hardhat": "npm install && npx hardhat compile && npx hardhat node",
-    "deploy-contract": "npx hardhat ignition deploy ./ignition/modules/Token.js --network localhost",
-    "start-frontend": "cd frontend && npm install && npm start"
+    "hardhat": "npm install && npx hardhat compile && npx hardhat node",
+    "contract": "npx hardhat ignition deploy ./ignition/modules/Token.js --network localhost",
+    "frontend": "cd frontend && npm install && npm start"
   },
   "repository": {
     "type": "git",
@@ -23,6 +23,7 @@
     "hardhat": "^2.22.18"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^5.2.0",
     "ethers": "^6.13.5"
   }
 }

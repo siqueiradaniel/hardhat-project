@@ -1,10 +1,9 @@
 import './../css/App.css';
-import { toBigInt, parseUnits, ethers, Contract, ConstructorFragment } from 'ethers';
-import { React, useRef, formatUnits, useState, useEffect } from 'react';
+import { ethers, Contract } from 'ethers';
+import { React, useState, useEffect } from 'react';
 import TokenArtifact from "../contracts/Token.json";
 
 const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const signerAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const localBlockchainAddress = 'http://localhost:8545';
 
 function App() {
@@ -25,24 +24,12 @@ function App() {
         return new Contract(contractAddress, TokenArtifact.abi, signer);
     };
     
-    const TuringsToSats = (turings) => parseUnits(turings.toString(), 18); 
-    const SatsToTuring = (sats: BigNumber): number => {
-        // Assuming 1 Turing = 10^18 Sats (example scaling factor)
-        const scalingFactor = ethers.parseUnits("1", 18); 
+    const TuringsToSats = (turings) => ethers.parseUnits(turings.toString(), 18); 
+
+    const SatsToTuring = (sats) => {
+        const scalingFactor = ethers.parseUnits("1", 18);  // 1 Turing = 10^18 Sats
         return parseFloat(sats.toString()) / parseFloat(scalingFactor.toString());
     };    
-
-
-    const getSymbol = async () => {
-        try {
-            const contract = await setupContract();
-            await contract.symbol().then((res) => {
-                console.log(res);
-            });
-        } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
-        }
-    }
 
     const getAllBalances = async () => {
         try {
@@ -55,13 +42,13 @@ function App() {
             }, {});
         
             setCodinomeBalances(balance_mp);
-            console.log(codinomeBalances);
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
         }
     };
 
-    const issueToken = async (codinome: string, turings: number) => {
+    // Mudar para buscar do contrato o novo saldo.
+    const issueToken = async (codinome, turings) => {
         try {
             const contract = await setupContract();
             const sats = TuringsToSats(turings);
@@ -82,7 +69,8 @@ function App() {
         try {
             const contract = await setupContract();
             const balance = await contract.balanceByCodiname(address);
-            
+            console.log(balance);
+
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
         }
@@ -91,9 +79,7 @@ function App() {
     const vote = async (codinome, turings) => {
         try {
             const contract = await setupContract();
-            
             await contract.vote(codinome, TuringsToSats(turings));
-
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
         }
@@ -103,7 +89,6 @@ function App() {
         try {
             const contract = await setupContract();
             await contract.votingOn();
-
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
         }
@@ -118,22 +103,12 @@ function App() {
         }
     }
 
-    const msgSender = async () => {
-        const contract = await setupContract();
-
-        const res = await contract.msgSender()
-        console.log(res);
-    }
-
-    
     const listeningVote = async () => {
         const contract = await setupContract();
     
         contract.on('Voted', (voter, codinome, sats) => {
             console.log(`Voted event: voter=${voter}, codinome=${codinome}, sats=${sats}`);
-    
-            // Ensure sats is converted to Turings with correct precision
-            const turings = SatsToTuring(sats);  // Get the correct value in Turings
+            const turings = SatsToTuring(sats); 
 
             setCodinomeBalances(prevAmounts => {
                 const newAmounts = { ...prevAmounts };
@@ -172,21 +147,21 @@ function App() {
 
             <div className="vote-box">
                 <div className="input-group">
-                    <label htmlFor="address">Address</label>
+                    <label htmlFor="address">Codiname</label>
                     <input 
                         type="text" 
                         id="address" 
-                        placeholder="Value" 
+                        placeholder="nomex" 
                         value={address}
                         onChange={(e) => setAddress(e.target.value)} 
                     />
                 </div>
                 <div className="input-group">
-                    <label htmlFor="value">Value (Entre 0 e 2)</label>
+                    <label htmlFor="value">Value</label>
                     <input
                         type="number"
                         id="value"
-                        placeholder="Limitar quantidade de dígitos****"
+                        placeholder="value in [0, 2]"
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
                     />

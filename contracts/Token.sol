@@ -1,45 +1,28 @@
 //SPDX-License-Identifier: UNLICENSED
-
-// Solidity files have to start with this pragma.
-// It will be used by the Solidity compiler to validate its version.
 pragma solidity ^0.8.0;
 
-// This is the main building block for smart contracts.
-contract Token {
-    // Some string type variables to identify the token.
-    string public name = "Turing";
-    string public symbol = "TUR";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-    // The fixed amount of tokens, stored in an unsigned integer type variable.
-    uint256 public totalSupply = 0; // Include decimals (18 decimals as common in ERC-20)
+contract Token is ERC20 {
+    // Criei essas constantes, mas colocar direto no código é feio demais.
+    uint256 public constant ACCOUNT_NUMBER = 11;
+    uint256 public constant VOTE_REWARD = 0.2 * 10**18;
+    uint256 public constant MAX_MINT_VOTE = 2 * 10**18;
 
-    // An address type variable is used to store ethereum accounts.
     address public owner;
     address public professora = 0x502542668aF09fa7aea52174b9965A7799343Df7;
+    bool public votingActive = true;
 
-    // A mapping is a key/value map. Here we store each account's balance.
-    mapping(address => uint256) balances;
     mapping(string => address) addresses;
     mapping(address => mapping(string => bool)) public voted; // Track voting
 
-    // Voting state
-    bool public votingActive = true;
-
-    uint256 ACCOUNT_NUMBER = 11;
     string[] codinomes = new string[](ACCOUNT_NUMBER);
-
-    // The Transfer event helps off-chain applications understand
-    // what happens within your contract.
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    
     event Voted(address indexed voter, string codinome, uint256 amount);
 
-    /**
-     * Contract initialization.
-     */
-    constructor() {
+    constructor() ERC20("Turing", "TUR") {
         owner = msg.sender;
     
-        // Sample mappings for addresses (e.g., "nome1", "nome2" etc.)
         addresses["nome0"] = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
         addresses["nome1"] = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
         addresses["nome2"] = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
@@ -71,76 +54,38 @@ contract Token {
     }
 
     modifier unauthorizedSender() {
-        require(msg.sender != address(0), "Remetente nao autorizado");
+        require(msg.sender != address(0), "Remetente nao autorizado!");
         _;
     }
     modifier unauthorizedRecipient(address userAddress) {
-        require(userAddress != address(0), "Destinatario nao autorizado");
+        require(userAddress != address(0), "Destinatario nao autorizado!");
         _;
     }
     modifier cantVoteForYourself(string memory codinome) {
-        require(msg.sender != addresses[codinome], "Nao pode votar em si mesmo");
-        _;
-    }
-    modifier hasTheValue(address userAddress, uint256 amount) {
-        require(balances[userAddress] >= amount, "Not enough tokens");
+        require(msg.sender != addresses[codinome], "Nao pode votar em si mesmo!");
         _;
     }
     modifier voteActivated() {
-        require(votingActive, "Voting is not active");
+        require(votingActive, "Votacao esta desativada!");
         _;
     }
     modifier oneVoteToRecipient(string memory codinome) {
-        require(!voted[msg.sender][codinome], "Voce ja votou nesse usuario");
+        require(!voted[msg.sender][codinome], "Voce ja votou nesse usuario!");
         _;
     }
     modifier onlyTwoSats(uint256 sats) {
-        require(sats <= 2 * (10 ** 18), "Quantidade de tokens de voto muito alta");
+        require(sats <= MAX_MINT_VOTE, "Quantidade de tokens de voto muito alta!");
         _;
-    }
-    
-    /**
-     * A function to transfer tokens.
-     *
-     * The `external` modifier makes a function *only* callable from *outside*
-     * the contract.
-     */
-    function transfer(address userAddress, uint256 amount) external hasTheValue(userAddress, amount) {
-        balances[msg.sender] -= amount;
-        balances[userAddress] += amount;
-
-        emit Transfer(msg.sender, userAddress, amount);
-    }
-
-    function msgSender() external view returns (address) {
-        return msg.sender;
-    }     
-
-    /**
-     * Read only function to retrieve the token balance of a given account.
-     */
-    function balanceOf(address userAddress) unauthorizedRecipient(userAddress) external view returns (uint256) {
-        return balances[userAddress];  
     }
 
     function balanceByCodiname(string memory codinome) unauthorizedRecipient(addresses[codinome]) external view returns (uint256) {
-        return balances[addresses[codinome]];
+        return balanceOf(addresses[codinome]);
     }
 
-    /**
-     * This function allows the owner or the professor to issue new tokens.
-     * This function mints tokens and assigns them to the specified address.
-     */
     function issueToken(string memory codinome, uint256 sats) public isSuperUser() unauthorizedRecipient(addresses[codinome]) {
         _mint(addresses[codinome], sats);
     }
 
-    /**
-     * This function allows authorized users to vote for a codinome.
-     * Users can only vote once and cannot vote for themselves. 
-     * The maximum amount of tokens a user can vote with is 2 * 10^18 saTurings.
-     * It also rewards the voter with 0.2 Turing tokens.
-     */
     function vote(string memory codinome, uint256 sats) public unauthorizedSender() 
                                                                unauthorizedRecipient(addresses[codinome])
                                                                cantVoteForYourself(codinome)
@@ -148,40 +93,26 @@ contract Token {
                                                                oneVoteToRecipient(codinome)
                                                                onlyTwoSats(sats) {
         _mint(addresses[codinome], sats);
-        _mint(msg.sender, 0.2 * 10**18); // Reward for voting
-
+        _mint(msg.sender, VOTE_REWARD); // Reward for voting
         voted[msg.sender][codinome] = true; // Mark that the user has voted
 
         emit Voted(msg.sender, codinome, sats);
     }
 
-    /**
-     * This method enables voting. Can be called only by the owner or the professor.
-     */
     function votingOn() public isSuperUser() {
         votingActive = true;
     }
 
-    /**
-     * This method disables voting. Can be called only by the owner or the professor.
-     */
     function votingOff() public isSuperUser() {
         votingActive = false;
-    }
-
-    // Internal function to mint new tokens
-    function _mint(address userAddress, uint256 amount) internal unauthorizedRecipient(userAddress) {
-        balances[userAddress] += amount;
-        totalSupply += amount;
     }
 
     function getAllBalances() public view returns (string[] memory, uint256[] memory) {
         uint256[] memory amounts = new uint256[](ACCOUNT_NUMBER);
 
-        amounts[0] = balances[addresses[codinomes[0]]];
-        amounts[1] = balances[addresses[codinomes[1]]];
-
-        
+        for (uint256 i=0; i< ACCOUNT_NUMBER; i++) {
+            amounts[i] = balanceOf(addresses[codinomes[i]]);
+        }
 
         return (codinomes, amounts);
     }
