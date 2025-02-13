@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Token is ERC20 {
     // Criei essas constantes, mas colocar direto no código é feio demais.
-    uint256 public constant ACCOUNT_NUMBER = 11;
-    uint256 public constant VOTE_REWARD = 0.2 * 10**18;
-    uint256 public constant MAX_MINT_VOTE = 2 * 10**18;
+    uint256 constant ACCOUNT_NUMBER = 11;
+    uint256 constant VOTE_REWARD = 0.2 * 10**18;
+    uint256 constant MAX_MINT_VOTE = 2 * 10**18;
 
     address public owner;
     address public professora = 0x502542668aF09fa7aea52174b9965A7799343Df7;

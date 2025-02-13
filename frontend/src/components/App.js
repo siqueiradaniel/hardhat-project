@@ -52,10 +52,11 @@ function App() {
             const contract = await setupContract();
             const sats = TuringsToSats(turings);
             await contract.issueToken(codinome, sats);
+            const newBalance = await contract.balanceByCodiname(address);
            
             setCodinomeBalances(prevAmounts => ({
                 ...prevAmounts,
-                [codinome]: (Number(prevAmounts[codinome]) || 0) + Number(turings),
+                [codinome]: SatsToTuring(newBalance),
             }));
 
         } catch (error) {
@@ -63,12 +64,11 @@ function App() {
         }
     };
 
-    
-    const balanceByCodiname = async (address) => { 
+    const balanceByCodiname = async (codinome) => { 
         try {
             const contract = await setupContract();
-            const balance = await contract.balanceByCodiname(address);
-            console.log(balance);
+            const balance = await contract.balanceByCodiname(codinome);
+            alert(`${codinome} tem ${SatsToTuring(balance)} Turings`);
 
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
@@ -108,18 +108,19 @@ function App() {
 
             contract.on('Voted', async (sender, recipient, sats) => {
                 console.log(`Voted event: sender=${sender}, recipient=${recipient}, sats=${sats}`);
-                const turings = SatsToTuring(sats); // Convert sats to turings
-                const reward_in_sats = await contract.VOTE_REWARD(); 
-                const reward_in_turing = SatsToTuring(reward_in_sats);
-
+                
                 // Get balances for sender and the provided address
-                await contract.balanceByCodiname(sender);
-                await contract.balanceByCodiname(recipient);
+                const senderBalance = await contract.balanceByCodiname(sender);
+                const recipientBalance = await contract.balanceByCodiname(recipient);
+
+                // Convert to saTurings
+                const convertedSenderBalance = SatsToTuring(senderBalance); 
+                const convertedRecipientBalance = SatsToTuring(recipientBalance);
                 
                 setCodinomeBalances(prevAmounts => ({
                     ...prevAmounts,
-                    [sender]: (prevAmounts[sender] || 0) + reward_in_turing,
-                    [recipient]: (prevAmounts[recipient] || 0) + turings
+                    [sender]: convertedSenderBalance,
+                    [recipient]: convertedRecipientBalance
                 }));
             });
 
@@ -193,7 +194,7 @@ function App() {
                 {sortedEntries().map(([codinome, turings]) => (
                     <li key={codinome}>
                         <span>{codinome}</span>
-                        <span>{turings.toFixed(3)}</span>
+                        <span>{Math.trunc(turings * 1000) / 1000}</span>
                     </li>
                 ))}
             </ul>
