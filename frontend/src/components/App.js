@@ -1,6 +1,6 @@
 import './../css/App.css';
-import { toBigInt, parseUnits, ethers, Contract, ConstructorFragment } from 'ethers';
-import { React, useRef, formatUnits, useState, useEffect } from 'react';
+import { parseUnits, ethers, Contract } from 'ethers';
+import { React, useState, useEffect } from 'react';
 import TokenArtifact from "../contracts/Token.json";
 
 const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
@@ -61,33 +61,24 @@ function App() {
         }
     };
 
-    const issueToken = async (codinome: string, turings: number) => {
-        try {
-            const contract = await setupContract();
-            const sats = TuringsToSats(turings);
-            await contract.issueToken(codinome, sats);
-           
-            setCodinomeBalances(prevAmounts => ({
-                ...prevAmounts,
-                [codinome]: (Number(prevAmounts[codinome]) || 0) + Number(turings),
-            }));
-
-        } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
-        }
-    };
 
     
-    const balanceByCodiname = async (address) => { 
+    const balanceByCodiname = async (codinome) => { 
         try {
             const contract = await setupContract();
-            const balance = await contract.balanceByCodiname(address);
-            
+            const address = await contract.addresses(codinome); // Get the address linked to the codinome
+    
+            if (address === "0x0000000000000000000000000000000000000000") {
+                throw new Error("Invalid codinome");
+            }
+    
+            const balance = await contract.balanceOf(address); // Get balance of the address
+            return balance;
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.message ?? "Unknown error");
         }
-    }
-
+    };
+    
     const vote = async (codinome, turings) => {
         try {
             const contract = await setupContract();
@@ -118,14 +109,6 @@ function App() {
         }
     }
 
-    const msgSender = async () => {
-        const contract = await setupContract();
-
-        const res = await contract.msgSender()
-        console.log(res);
-    }
-
-    
     const listeningVote = async () => {
         const contract = await setupContract();
     
