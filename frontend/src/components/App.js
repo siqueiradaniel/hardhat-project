@@ -1,10 +1,9 @@
 import './../css/App.css';
-import { parseUnits, ethers, Contract } from 'ethers';
-import { React, useState, useEffect } from 'react';
+import { ethers } from 'ethers';
+import { React, useState, useEffect, useRef } from 'react';
 import TokenArtifact from "../contracts/Token.json";
 
 const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const signerAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const localBlockchainAddress = 'http://localhost:8545';
 
 function App() {
@@ -12,81 +11,76 @@ function App() {
     const [address, setAddress] = useState("");
     const [value, setValue] = useState(0);
     const [codinomeBalances, setCodinomeBalances] = useState({});
+    const signerRef = useRef(null);
     
-
     useEffect(() => {
-        listeningVote();
         getAllBalances();
+        listeningVote();
     }, []);
 
     const setupContract = async () => {
-        const provider = new ethers.JsonRpcProvider(localBlockchainAddress);
-        const signer = await provider.getSigner();
-        return new Contract(contractAddress, TokenArtifact.abi, signer);
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        signerRef.current = await provider.getSigner();
+        return new ethers.Contract(contractAddress, TokenArtifact.abi, signerRef.current);
     };
     
-    const TuringsToSats = (turings) => parseUnits(turings.toString(), 18); 
-    const SatsToTuring = (sats: BigNumber): number => {
-        // Assuming 1 Turing = 10^18 Sats (example scaling factor)
-        const scalingFactor = ethers.parseUnits("1", 18); 
+    const TuringsToSats = (turings) => ethers.parseUnits(turings.toString(), 18); 
+
+    const SatsToTuring = (sats) => {
+        const scalingFactor = ethers.parseUnits("1", 18);  // 1 Turing = 10^18 Sats
         return parseFloat(sats.toString()) / parseFloat(scalingFactor.toString());
     };    
-
-
-    const getSymbol = async () => {
-        try {
-            const contract = await setupContract();
-            await contract.symbol().then((res) => {
-                console.log(res);
-            });
-        } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
-        }
-    }
 
     const getAllBalances = async () => {
         try {
             const contract = await setupContract();
             const [codi, bal] = await contract.getAllBalances();
-            
             const balance_mp = codi.reduce((acc, codinome, index) => {
                 acc[codinome] = SatsToTuring(bal[index]); // Convert to readable format
                 return acc;
             }, {});
         
             setCodinomeBalances(balance_mp);
-            console.log(codinomeBalances);
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error getAll");
         }
     };
 
+    // Mudar para buscar do contrato o novo saldo.
+    const issueToken = async (codinome, turings) => {
+        try {
+            const contract = await setupContract();
+            const sats = TuringsToSats(turings);
+            await contract.issueToken(codinome, sats);
+            const newBalance = await contract.balanceByCodiname(address);
+           
+            setCodinomeBalances(prevAmounts => ({
+                ...prevAmounts,
+                [codinome]: SatsToTuring(newBalance),
+            }));
 
-    
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error issue");
+        }
+    };
+
     const balanceByCodiname = async (codinome) => { 
         try {
             const contract = await setupContract();
-            const address = await contract.addresses(codinome); // Get the address linked to the codinome
-    
-            if (address === "0x0000000000000000000000000000000000000000") {
-                throw new Error("Invalid codinome");
-            }
-    
-            const balance = await contract.balanceOf(address); // Get balance of the address
-            return balance;
+            const balance = await contract.balanceByCodiname(codinome);
+            alert(`${codinome} tem ${SatsToTuring(balance)} Turings`);
+
         } catch (error) {
-            alert(error.reason ?? error.message ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error balanceBy");
         }
     };
     
     const vote = async (codinome, turings) => {
         try {
             const contract = await setupContract();
-            
             await contract.vote(codinome, TuringsToSats(turings));
-
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error vote");
         }
     }
 
@@ -94,9 +88,9 @@ function App() {
         try {
             const contract = await setupContract();
             await contract.votingOn();
-
+            setVotingOn(true);
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error votingOn");
         }
     }
 
@@ -104,32 +98,44 @@ function App() {
         try {
             const contract = await setupContract();
             await contract.votingOff();
+            setVotingOn(false);
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error votingOff");
         }
     }
 
     const listeningVote = async () => {
-        const contract = await setupContract();
-    
-        contract.on('Voted', (voter, codinome, sats) => {
-            console.log(`Voted event: voter=${voter}, codinome=${codinome}, sats=${sats}`);
-    
-            // Ensure sats is converted to Turings with correct precision
-            const turings = SatsToTuring(sats);  // Get the correct value in Turings
+        try {
+            const contract = await setupContract();
+            
+            contract.on('Voted', async (sender, recipient, sats) => {
+                console.log(`Voted event: sender=${sender}, recipient=${recipient}, sats=${sats}`);
+                
+                // Get balances for sender and the provided address
+                const senderBalance = await contract.balanceByCodiname(sender);
+                const recipientBalance = await contract.balanceByCodiname(recipient);
 
-            setCodinomeBalances(prevAmounts => {
-                const newAmounts = { ...prevAmounts };
-                newAmounts[codinome] = newAmounts[codinome] ? newAmounts[codinome] + turings : turings;
-                return newAmounts;
+                // Convert to saTurings
+                const convertedSenderBalance = SatsToTuring(senderBalance); 
+                const convertedRecipientBalance = SatsToTuring(recipientBalance);
+                
+                setCodinomeBalances(prevAmounts => ({
+                    ...prevAmounts,
+                    [sender]: convertedSenderBalance,
+                    [recipient]: convertedRecipientBalance
+                }));
             });
-        });
+
+            // Cleanup the listener when the component is unmounted
+            return () => {
+                contract.removeListener('Voted');
+            };
+        } catch (error) {
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error listener");
+        }
     
-        // Cleanup the listener when the component is unmounted
-        return () => {
-            contract.removeListener('Voted');
-        };
     };
+
 
     const sortedEntries = () => Object.entries(codinomeBalances).sort((a, b) => b[1] - a[1]); 
     
@@ -146,7 +152,6 @@ function App() {
                         checked={vontingOn}
                         onChange={() => {
                             (vontingOn ? votingOff : votingOn)();
-                            setVotingOn(!vontingOn);
                         }}
                     />
                     <span className="slider" />
@@ -155,21 +160,21 @@ function App() {
 
             <div className="vote-box">
                 <div className="input-group">
-                    <label htmlFor="address">Address</label>
+                    <label htmlFor="address">Codiname</label>
                     <input 
                         type="text" 
                         id="address" 
-                        placeholder="Value" 
+                        placeholder="nomex" 
                         value={address}
                         onChange={(e) => setAddress(e.target.value)} 
                     />
                 </div>
                 <div className="input-group">
-                    <label htmlFor="value">Value (Entre 0 e 2)</label>
+                    <label htmlFor="value">Value</label>
                     <input
                         type="number"
                         id="value"
-                        placeholder="Limitar quantidade de dígitos****"
+                        placeholder="value in [0, 2]"
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
                     />
@@ -190,7 +195,7 @@ function App() {
                 {sortedEntries().map(([codinome, turings]) => (
                     <li key={codinome}>
                         <span>{codinome}</span>
-                        <span>{turings}</span>
+                        <span>{Math.trunc(turings * 1000) / 1000}</span>
                     </li>
                 ))}
             </ul>

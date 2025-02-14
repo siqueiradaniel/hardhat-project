@@ -3,9 +3,9 @@
 ## To start the local blockchain, deploy our contract in it and start frontend run:
 ## Run this command start the frontend
 ```shell
-npm run start-hardhat
-npm run deploy-contract
-npm run start-frontend
+npm run hardhat
+npm run contract
+npm run frontend
 ```
 
 
