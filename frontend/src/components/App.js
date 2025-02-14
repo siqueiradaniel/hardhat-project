@@ -11,6 +11,7 @@ function App() {
     const [address, setAddress] = useState("");
     const [value, setValue] = useState(0);
     const [codinomeBalances, setCodinomeBalances] = useState({});
+    const [signerCodinome, setSignerCodinome] = useState("unknown");
     
     useEffect(() => {
         getAllBalances();
@@ -18,9 +19,16 @@ function App() {
     }, []);
 
     const setupContract = async () => {
+        
         const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        return new ethers.Contract(contractAddress, TokenArtifact.abi, signer);
+        
+        const _signer = await provider.getSigner();
+        
+        const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, _signer);
+        
+        await setSignerCodinome(await contract.getSenderCodinome());
+        
+        return contract;
     };
     
     const TuringsToSats = (turings) => ethers.parseUnits(turings.toString(), 18); 
@@ -32,14 +40,18 @@ function App() {
 
     const getAllBalances = async () => {
         try {
+            
             const contract = await setupContract();
+            
             const [codi, bal] = await contract.getAllBalances();
+            
             const balance_mp = codi.reduce((acc, codinome, index) => {
                 acc[codinome] = SatsToTuring(bal[index]); // Convert to readable format
                 return acc;
             }, {});
-        
+            
             setCodinomeBalances(balance_mp);
+            
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em getAllBalances!");
         }
@@ -51,7 +63,7 @@ function App() {
             const contract = await setupContract();
             const sats = TuringsToSats(turings);
             await contract.issueToken(codinome, sats);
-            const newBalance = await contract.balanceByCodiname(address);
+            const newBalance = await contract.balanceByCodiname(codinome);
            
             setCodinomeBalances(prevAmounts => ({
                 ...prevAmounts,
@@ -141,10 +153,17 @@ function App() {
     return (
         <div className="dashboard-container">
         
+        {/* User Info Section */}
+        <div className="user-info">
+            <p><strong>Codinome:</strong> {signerCodinome}</p>
+        </div>
+
+
         {/* Left: Voting Section */}
         <div className="vote-section">
             <div className="vote-header">
                 <p className="vote-title">Vote Active</p>
+                <p>{signerCodinome}</p>
                 <label className="toggle-switch">
                     <input 
                         type="checkbox" 

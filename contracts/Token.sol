@@ -63,6 +63,15 @@ contract Token is ERC20 {
         _;
     }
 
+    modifier onlyAuthorized() {
+        require(
+            msg.sender == owner || msg.sender == professora || bytes(codinomes_mp[msg.sender]).length != 0,
+            "Usuario nao autorizado!"
+        );
+        _;
+    }
+
+
     modifier unauthorizedSender() {
         require(bytes(codinomes_mp[msg.sender]).length != 0, "Remetente nao autorizado!");
         _;
@@ -92,11 +101,11 @@ contract Token is ERC20 {
         return balanceOf(addresses[codinome]);
     }
 
-    function issueToken(string memory codinome, uint256 sats) public isSuperUser() unauthorizedRecipient(addresses[codinome]) {
+    function issueToken(string memory codinome, uint256 sats) external isSuperUser() unauthorizedRecipient(addresses[codinome]) {
         _mint(addresses[codinome], sats);
     }
 
-    function vote(string memory codinome, uint256 sats) public voteActivated()
+    function vote(string memory codinome, uint256 sats) external voteActivated()
                                                                unauthorizedSender() 
                                                                unauthorizedRecipient(addresses[codinome])
                                                                cantVoteForYourself(codinome)
@@ -109,15 +118,15 @@ contract Token is ERC20 {
         emit Voted(codinomes_mp[msg.sender], codinome, sats);
     }
 
-    function votingOn() public isSuperUser() {
+    function votingOn() external isSuperUser() {
         votingActive = true;
     }
 
-    function votingOff() public isSuperUser() {
+    function votingOff() external isSuperUser() {
         votingActive = false;
     }
 
-    function getAllBalances() public view returns (string[] memory, uint256[] memory) {
+    function getAllBalances() external view returns (string[] memory, uint256[] memory) {
         uint256[] memory amounts = new uint256[](ACCOUNT_NUMBER);
 
         for (uint256 i=0; i< ACCOUNT_NUMBER; i++) {
@@ -125,5 +134,10 @@ contract Token is ERC20 {
         }
 
         return (codinomes, amounts);
+    }
+
+    function getSenderCodinome() external view onlyAuthorized() returns (string memory) {
+        // if codinome or owner or professora
+        return codinomes_mp[msg.sender];
     }
 }
