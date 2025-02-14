@@ -50,7 +50,7 @@ contract Token is ERC20 {
         string memory codinomeI;
 
         for (uint256 i=0; i< ACCOUNT_NUMBER; i++) {
-            codinomeI = string.concat("nome", Strings.toString(i));
+            codinomeI = string.concat("nome", Strings.toString(i+1));
             
             codinomes[i] = codinomeI;
             addresses[codinomeI] = addressList[i];
@@ -64,7 +64,7 @@ contract Token is ERC20 {
     }
 
     modifier unauthorizedSender() {
-        require(msg.sender != address(0), "Remetente nao autorizado!");
+        require(bytes(codinomes_mp[msg.sender]).length != 0, "Remetente nao autorizado!");
         _;
     }
     modifier unauthorizedRecipient(address userAddress) {

@@ -11,7 +11,6 @@ function App() {
     const [address, setAddress] = useState("");
     const [value, setValue] = useState(0);
     const [codinomeBalances, setCodinomeBalances] = useState({});
-    const signerRef = useRef(null);
     
     useEffect(() => {
         getAllBalances();
@@ -20,8 +19,8 @@ function App() {
 
     const setupContract = async () => {
         const provider = new ethers.BrowserProvider(window.ethereum);
-        signerRef.current = await provider.getSigner();
-        return new ethers.Contract(contractAddress, TokenArtifact.abi, signerRef.current);
+        const signer = await provider.getSigner();
+        return new ethers.Contract(contractAddress, TokenArtifact.abi, signer);
     };
     
     const TuringsToSats = (turings) => ethers.parseUnits(turings.toString(), 18); 
@@ -42,7 +41,7 @@ function App() {
         
             setCodinomeBalances(balance_mp);
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error getAll");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em getAllBalances!");
         }
     };
 
@@ -60,7 +59,7 @@ function App() {
             }));
 
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error issue");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em issueToken!");
         }
     };
 
@@ -71,7 +70,7 @@ function App() {
             alert(`${codinome} tem ${SatsToTuring(balance)} Turings`);
 
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error balanceBy");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em balanceByCodiname!");
         }
     };
     
@@ -80,7 +79,7 @@ function App() {
             const contract = await setupContract();
             await contract.vote(codinome, TuringsToSats(turings));
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error vote");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em vote!");
         }
     }
 
@@ -90,7 +89,7 @@ function App() {
             await contract.votingOn();
             setVotingOn(true);
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error votingOn");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Erroe em votingOn!");
         }
     }
 
@@ -100,17 +99,17 @@ function App() {
             await contract.votingOff();
             setVotingOn(false);
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error votingOff");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em votingOff!");
         }
     }
 
     const listeningVote = async () => {
         try {
             const contract = await setupContract();
-            
+
             contract.on('Voted', async (sender, recipient, sats) => {
                 console.log(`Voted event: sender=${sender}, recipient=${recipient}, sats=${sats}`);
-                
+
                 // Get balances for sender and the provided address
                 const senderBalance = await contract.balanceByCodiname(sender);
                 const recipientBalance = await contract.balanceByCodiname(recipient);
@@ -131,7 +130,7 @@ function App() {
                 contract.removeListener('Voted');
             };
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error listener");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em listeningVote!");
         }
     
     };
