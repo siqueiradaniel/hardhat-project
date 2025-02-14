@@ -5,7 +5,6 @@
 ```shell
 npm run hardhat
 npm run contract
-npm run frontend
 ```
 
 
