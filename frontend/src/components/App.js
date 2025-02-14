@@ -19,10 +19,8 @@ function App() {
     }, []);
 
     const setupContract = async () => {
-        if (signerRef.current == null) {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            signerRef.current = await provider.getSigner();
-        } 
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        signerRef.current = await provider.getSigner();
         return new ethers.Contract(contractAddress, TokenArtifact.abi, signerRef.current);
     };
     
@@ -90,6 +88,7 @@ function App() {
         try {
             const contract = await setupContract();
             await contract.votingOn();
+            setVotingOn(true);
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error votingOn");
         }
@@ -99,6 +98,7 @@ function App() {
         try {
             const contract = await setupContract();
             await contract.votingOff();
+            setVotingOn(false);
         } catch (error) {
             alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error votingOff");
         }
@@ -107,7 +107,7 @@ function App() {
     const listeningVote = async () => {
         try {
             const contract = await setupContract();
-
+            
             contract.on('Voted', async (sender, recipient, sats) => {
                 console.log(`Voted event: sender=${sender}, recipient=${recipient}, sats=${sats}`);
                 
@@ -152,7 +152,6 @@ function App() {
                         checked={vontingOn}
                         onChange={() => {
                             (vontingOn ? votingOff : votingOn)();
-                            setVotingOn(!vontingOn);
                         }}
                     />
                     <span className="slider" />
