@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "hardhat": "npm install && npx hardhat compile && npx hardhat node",
-    "contract": "npx hardhat ignition deploy ./ignition/modules/Token.js --network localhost && cp ./artifacts/contracts/Token.sol/Token.json ./frontend/src/contracts/",
+    "contract": "npx hardhat ignition deploy ./ignition/modules/Token.js --network localhost && cp ./artifacts/contracts/Token.sol/Token.json ./frontend/src/contracts/ && npm run frontend",
     "frontend": "cd frontend && npm install && npm start"
   },
   "repository": {

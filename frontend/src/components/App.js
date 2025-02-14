@@ -1,6 +1,6 @@
 import './../css/App.css';
-import { ethers, Contract } from 'ethers';
-import { React, useState, useEffect } from 'react';
+import { ethers } from 'ethers';
+import { React, useState, useEffect, useRef } from 'react';
 import TokenArtifact from "../contracts/Token.json";
 
 const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
@@ -11,6 +11,7 @@ function App() {
     const [address, setAddress] = useState("");
     const [value, setValue] = useState(0);
     const [codinomeBalances, setCodinomeBalances] = useState({});
+    const signerRef = useRef(null);
     
     useEffect(() => {
         getAllBalances();
@@ -18,9 +19,11 @@ function App() {
     }, []);
 
     const setupContract = async () => {
-        const provider = new ethers.JsonRpcProvider(localBlockchainAddress);
-        const signer = await provider.getSigner();
-        return new Contract(contractAddress, TokenArtifact.abi, signer);
+        if (signerRef.current == null) {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            signerRef.current = await provider.getSigner();
+        } 
+        return new ethers.Contract(contractAddress, TokenArtifact.abi, signerRef.current);
     };
     
     const TuringsToSats = (turings) => ethers.parseUnits(turings.toString(), 18); 
@@ -34,7 +37,6 @@ function App() {
         try {
             const contract = await setupContract();
             const [codi, bal] = await contract.getAllBalances();
-            
             const balance_mp = codi.reduce((acc, codinome, index) => {
                 acc[codinome] = SatsToTuring(bal[index]); // Convert to readable format
                 return acc;
@@ -42,7 +44,7 @@ function App() {
         
             setCodinomeBalances(balance_mp);
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error getAll");
         }
     };
 
@@ -60,7 +62,7 @@ function App() {
             }));
 
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error issue");
         }
     };
 
@@ -71,7 +73,7 @@ function App() {
             alert(`${codinome} tem ${SatsToTuring(balance)} Turings`);
 
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error balanceBy");
         }
     }
 
@@ -80,7 +82,7 @@ function App() {
             const contract = await setupContract();
             await contract.vote(codinome, TuringsToSats(turings));
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error vote");
         }
     }
 
@@ -89,7 +91,7 @@ function App() {
             const contract = await setupContract();
             await contract.votingOn();
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error votingOn");
         }
     }
 
@@ -98,7 +100,7 @@ function App() {
             const contract = await setupContract();
             await contract.votingOff();
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error votingOff");
         }
     }
 
@@ -129,7 +131,7 @@ function App() {
                 contract.removeListener('Voted');
             };
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error");
+            alert(error.reason ?? error.revert?.args?.[0] ?? "Unknown error listener");
         }
     
     };
