@@ -11,7 +11,7 @@ function App() {
     const [address, setAddress] = useState("");
     const [value, setValue] = useState(0);
     const [codinomeBalances, setCodinomeBalances] = useState({});
-    const [signerCodinome, setSignerCodinome] = useState("unknown");
+    const [signerCodinome, setSignerCodinome] = useState("Conecte-se a uma conta autorizada!");
     
     useEffect(() => {
         getAllBalances();
@@ -19,16 +19,24 @@ function App() {
     }, []);
 
     const setupContract = async () => {
-        
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        
-        const _signer = await provider.getSigner();
-        
-        const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, _signer);
-        
-        await setSignerCodinome(await contract.getSenderCodinome());
-        
-        return contract;
+        if (window.ethereum == null) {
+            console.log("Local");
+            const provider = new ethers.JsonRpcProvider(localBlockchainAddress);
+            const signer = await provider.getSigner();
+            const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, signer);
+            setSignerCodinome(await contract.getSenderCodinome());    
+            return contract;
+        }
+
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const _signer = await provider.getSigner();
+            const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, _signer);
+            setSignerCodinome(await contract.getSenderCodinome());
+            return contract;
+        } catch (error) {
+            throw new Error(error.reason || error.revert?.args?.[0] || "Usuário não autorizado!");
+        }                   
     };
     
     const TuringsToSats = (turings) => ethers.parseUnits(turings.toString(), 18); 
@@ -40,20 +48,16 @@ function App() {
 
     const getAllBalances = async () => {
         try {
-            
             const contract = await setupContract();
-            
             const [codi, bal] = await contract.getAllBalances();
-            
             const balance_mp = codi.reduce((acc, codinome, index) => {
                 acc[codinome] = SatsToTuring(bal[index]); // Convert to readable format
                 return acc;
             }, {});
             
             setCodinomeBalances(balance_mp);
-            
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em getAllBalances!");
+            alert(error.reason || error.message || "Erro em getAllBalances!");
         }
     };
 
@@ -64,14 +68,17 @@ function App() {
             const sats = TuringsToSats(turings);
             await contract.issueToken(codinome, sats);
             const newBalance = await contract.balanceByCodiname(codinome);
-           
+            console.log("Previous balance:", codinomeBalances[codinome]);
+            console.log("New balance:", SatsToTuring(newBalance));
+
+
             setCodinomeBalances(prevAmounts => ({
                 ...prevAmounts,
-                [codinome]: SatsToTuring(newBalance),
+                [codinome]: codinomeBalances[codinome] + turings,
             }));
 
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em issueToken!");
+            alert(error.reason || error.message || "Erro em votingOff!");
         }
     };
 
@@ -82,7 +89,7 @@ function App() {
             alert(`${codinome} tem ${SatsToTuring(balance)} Turings`);
 
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em balanceByCodiname!");
+            alert(error.reason || error.message || "Erro em votingOff!");
         }
     };
     
@@ -91,7 +98,7 @@ function App() {
             const contract = await setupContract();
             await contract.vote(codinome, TuringsToSats(turings));
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em vote!");
+            alert(error.reason || error.message || "Erro em votingOff!");
         }
     }
 
@@ -101,17 +108,21 @@ function App() {
             await contract.votingOn();
             setVotingOn(true);
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Erroe em votingOn!");
+            alert(error.reason || error.message || "Erro em votingOff!");
         }
     }
 
     const votingOff = async () => {
         try {
+            console.log(1);
             const contract = await setupContract();
+            console.log(contract);
             await contract.votingOff();
+            console.log(3);
             setVotingOn(false);
+            console.log(4);
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em votingOff!");
+            alert(error.reason || error.message || "Erro em votingOff!");
         }
     }
 
@@ -142,7 +153,7 @@ function App() {
                 contract.removeListener('Voted');
             };
         } catch (error) {
-            alert(error.reason ?? error.revert?.args?.[0] ?? "Erro em listeningVote!");
+            alert(error.reason || error.message || "Erro em votingOff!");
         }
     
     };
@@ -153,27 +164,26 @@ function App() {
     return (
         <div className="dashboard-container">
         
-        {/* User Info Section */}
-        <div className="user-info">
-            <p><strong>Codinome:</strong> {signerCodinome}</p>
-        </div>
-
-
         {/* Left: Voting Section */}
         <div className="vote-section">
             <div className="vote-header">
-                <p className="vote-title">Vote Active</p>
-                <p>{signerCodinome}</p>
-                <label className="toggle-switch">
-                    <input 
-                        type="checkbox" 
-                        checked={vontingOn}
-                        onChange={() => {
-                            (vontingOn ? votingOff : votingOn)();
-                        }}
-                    />
-                    <span className="slider" />
-                </label>
+                <div className="vote-header">
+                    <p><strong>Codinome:</strong> {signerCodinome}</p>
+                </div>
+                <div className="vote-header">
+                    <p className="vote-title">Vote Active</p>
+                    
+                    <label className="toggle-switch">
+                        <input 
+                            type="checkbox" 
+                            checked={vontingOn}
+                            onChange={() => {
+                                (vontingOn ? votingOff : votingOn)();
+                            }}
+                        />
+                        <span className="slider" />
+                    </label>
+                </div>
             </div>
 
             <div className="vote-box">

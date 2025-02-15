@@ -32,8 +32,15 @@
   margin-bottom: 20px;
 }
 
+.vote-header-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .vote-title {
   font-weight: bold;
+  margin-right: 15px;
 }
 
 .vote-description {

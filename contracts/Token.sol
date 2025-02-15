@@ -66,7 +66,7 @@ contract Token is ERC20 {
     modifier onlyAuthorized() {
         require(
             msg.sender == owner || msg.sender == professora || bytes(codinomes_mp[msg.sender]).length != 0,
-            "Usuario nao autorizado!"
+            "Conta nao autorizada!"
         );
         _;
     }
@@ -93,7 +93,7 @@ contract Token is ERC20 {
         _;
     }
     modifier onlyTwoSats(uint256 sats) {
-        require(sats <= MAX_MINT_VOTE, "Quantidade de tokens de voto muito alta!");
+        require(sats <= MAX_MINT_VOTE && sats >= 0, "Quantidade de tokens invalida! Valores aceitos estao entre 0 e 2!");
         _;
     }
 
@@ -137,7 +137,8 @@ contract Token is ERC20 {
     }
 
     function getSenderCodinome() external view onlyAuthorized() returns (string memory) {
-        // if codinome or owner or professora
+        if (msg.sender == owner) return "Owner";
+        if (msg.sender == professora) return "Professora";
         return codinomes_mp[msg.sender];
     }
 }
