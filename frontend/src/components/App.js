@@ -19,16 +19,12 @@ function App() {
     }, []);
 
     const setupContract = async () => {
-        if (window.ethereum == null) {
-            console.log("Local");
-            const provider = new ethers.JsonRpcProvider(localBlockchainAddress);
-            const signer = await provider.getSigner();
-            const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, signer);
-            setSignerCodinome(await contract.getSenderCodinome());    
-            return contract;
-        }
-
+        
         try {
+            if (window.ethereum == null) {
+                throw new Error("Usuário não autorizado!");
+            }
+
             const provider = new ethers.BrowserProvider(window.ethereum);
             const _signer = await provider.getSigner();
             const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, _signer);
